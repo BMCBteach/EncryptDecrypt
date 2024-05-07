@@ -1,0 +1,131 @@
+<!-----------------------------------------------------------------------
+
+
+Create a message to encrypt and decide on a key. The key can be a
+word or a number (or a combination). 
+
+Do you think you'd be able to decode and crack this message without the key?
+
+To decrypt, paste the encrypted message into the 'Text to Decrypt' box and 
+enter the correct key. 
+
+------------------------------------------------------------------------>
+<head>
+    <title>Encrypt a Message!</title><body>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script type="text/javascript" src="jquery.js"></script>
+</head>
+
+<body>
+<h2>Understand how it works</h2>
+<p>Create a message to encrypt and decide on a key. The key can be a
+word or a number (or a combination). 
+<br>
+Do you think you'd be able to decode and crack this message without the key?
+<br>
+To decrypt, paste the encrypted message into the 'Text to Decrypt' box and 
+enter the correct key.
+<br></p>
+    <div class="container"> 
+        <h1>Encrypt and Decrypt</h1>
+        <div class="forms">
+            <div class="formContainer encrypt"> 
+                <form method="post">
+                    Text to Encrypt:<input type=text name="string" required>
+                    Key:<input type="password" name="password" required>
+                    <input type="submit">
+                </form> 
+            </div>
+            <div class="result">
+                Output: 
+                <p class="resultContent"></p>
+            </div>
+            <br>
+            <div class="formContainer decrypt"> 
+                <form method="post">
+                    Text to Decrypt:<input type="text" name="string" required>
+                    Key:<input type="password" name="password" required>
+                    <input type="submit">
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script>
+    
+    // encrypt
+    const aesGcmEncrypt = async function (plaintext, password) {
+        try {
+            const pwUtf8 = new TextEncoder().encode(password);
+            const pwHash = await crypto.subtle.digest('SHA-256', pwUtf8);
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const alg = { name: 'AES-GCM', iv: iv };
+            const key = await crypto.subtle.importKey('raw', pwHash, alg, false, ['encrypt']);
+            const ptUint8 = new TextEncoder().encode(plaintext);
+            const ctBuffer = await crypto.subtle.encrypt(alg, key, ptUint8);
+            const ctArray = Array.from(new Uint8Array(ctBuffer));
+            const ctStr = ctArray.map(byte => String.fromCharCode(byte)).join('');
+            const ctBase64 = btoa(ctStr);
+            const ivHex = Array.from(iv).map(b => ('00' + b.toString(16)).slice(-2)).join('');
+            return ivHex + ctBase64;
+        } catch (err) { }
+    }
+
+    // decrypt
+    const aesGcmDecrypt = async function (ciphertext, password) {
+        try {
+            const pwUtf8 = new TextEncoder().encode(password);
+            const pwHash = await crypto.subtle.digest('SHA-256', pwUtf8);
+            const iv = ciphertext.slice(0, 24).match(/.{2}/g).map(byte => parseInt(byte, 16));
+            const alg = { name: 'AES-GCM', iv: new Uint8Array(iv) };
+            const key = await crypto.subtle.importKey('raw', pwHash, alg, false, ['decrypt']);
+            const ctStr = atob(ciphertext.slice(24));
+            const ctUint8 = new Uint8Array(ctStr.match(/[\s\S]/g).map(ch => ch.charCodeAt(0)));
+            const plainBuffer = await crypto.subtle.decrypt(alg, key, ctUint8);
+            const plaintext = new TextDecoder().decode(plainBuffer);
+            return plaintext;
+        } catch (err) { } 
+    } 
+
+
+    //Decrypt and Encrypt
+    const $result = document.querySelector('.result .resultContent');
+    const errorMsg = "WHoops, something went wrong";
+
+    document.querySelector('.encrypt form').addEventListener('submit', async (event) => { 
+        event.preventDefault();
+        try {
+            const text = event.target[0].value; 
+            const pass = event.target[1].value; 
+
+            console.log(text,pass);
+    
+            const result = await aesGcmEncrypt(text, pass);
+
+            $result.innerHTML = result ? result : errorMsg;
+
+            console.log(result);
+
+            } catch(e) {
+        $result.innerHTML = errorMsg
+        } 
+    });
+
+    document.querySelector('.decrypt form').addEventListener('submit', async (event) => { 
+        event.preventDefault();
+        try {
+            const text = event.target[0].value; 
+            const pass = event.target[1].value; 
+
+            const result = await aesGcmDecrypt(text, pass);
+            $result.innerHTML = result ? result : errorMsg;
+
+            console.log(result);
+
+            } catch(e) {
+            $result.innerHTML = errorMsg;k
+        } 
+    });
+
+</script>

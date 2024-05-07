@@ -1,0 +1,35 @@
+.container { 
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    input {
+      padding: 15px;
+      width: 100%;
+      outline: none;
+    }
+
+    input[type="submit"] {
+      display: block;
+      border-width: 5px;
+      border-color: skyblue;
+      width: 100px;
+      margin: 5px auto;
+      background: #fff;
+      cursor: pointer;
+    }
+    
+    .result {
+      background: skyblue;
+      padding: 15px;
+      width: 100%;
+      word-break: break-word;
+    }
+
+    .resultContent {
+      user-select: text;
+    }
